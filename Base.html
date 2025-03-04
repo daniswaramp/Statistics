@@ -1,0 +1,1952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metallurgical Data Analyzer</title>
+    <!-- External Libraries via CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.24.2/plotly.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --background-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --border-color: #dee2e6;
+            --text-color: #212529;
+            --text-muted: #6c757d;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --border-radius: 8px;
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--background-color);
+            padding: 0;
+            margin: 0;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            min-height: 100vh;
+            max-width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .sidebar {
+            background-color: var(--card-bg);
+            box-shadow: var(--shadow);
+            padding: 20px;
+            overflow-y: auto;
+            height: 100vh;
+            position: sticky;
+            top: 0;
+        }
+
+        .main-content {
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            padding: 20px;
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        h1, h2, h3, h4 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin-top: 15px;
+        }
+
+        h3 {
+            font-size: 1.2rem;
+            margin-top: 10px;
+        }
+
+        .file-upload {
+            text-align: center;
+            padding: 20px;
+            border: 2px dashed var(--border-color);
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .file-upload:hover {
+            border-color: var(--primary-color);
+            background-color: rgba(0, 123, 255, 0.05);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .filter-group {
+            margin-bottom: 15px;
+        }
+
+        details {
+            background-color: #f1f1f1;
+            border-radius: var(--border-radius);
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+
+        details summary {
+            padding: 10px 15px;
+            cursor: pointer;
+            background-color: rgba(0, 123, 255, 0.1);
+            font-weight: bold;
+            transition: var(--transition);
+        }
+
+        details summary:hover {
+            background-color: rgba(0, 123, 255, 0.2);
+        }
+
+        details .details-content {
+            padding: 15px;
+            background-color: white;
+        }
+
+        .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .filter-item {
+            flex: 1;
+            min-width: 100px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        input[type="number"], input[type="text"], select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+
+        input[type="number"]:focus, input[type="text"]:focus, select:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 5px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            margin-right: 10px;
+        }
+
+        .checkbox-item input {
+            margin-right: 5px;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        button:hover {
+            background-color: #0069d9;
+            transform: translateY(-1px);
+        }
+
+        button.secondary {
+            background-color: var(--secondary-color);
+        }
+
+        button.secondary:hover {
+            background-color: #5a6268;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        .stats-table th, .stats-table td {
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        .stats-table th {
+            background-color: rgba(0, 123, 255, 0.1);
+            font-weight: 500;
+        }
+
+        .stats-table tr:nth-child(even) {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+
+        .chart-container {
+            height: 400px;
+            margin-bottom: 30px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 3px solid var(--primary-color);
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: var(--border-radius);
+            display: none;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin: 20px 0;
+        }
+
+        .pagination button {
+            padding: 5px 10px;
+            background-color: white;
+            color: var(--primary-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .pagination button.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .results-section {
+            display: none;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            margin-left: 5px;
+            cursor: help;
+        }
+
+        .tooltip i {
+            color: var(--primary-color);
+            font-size: 0.9rem;
+        }
+
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.85rem;
+            font-weight: normal;
+        }
+
+        .tooltip .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #333 transparent transparent transparent;
+        }
+
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background-color: #f1f1f1;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .tab-button.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .tab-button:hover:not(.active) {
+            background-color: #ddd;
+        }
+
+        .copy-paste-buttons {
+            display: flex;
+            gap: 5px;
+            justify-content: flex-end;
+            padding: 10px 0;
+        }
+
+        .copy-paste-buttons button {
+            padding: 8px 12px;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>Data Filters</h1>
+            
+            <div class="file-upload" id="upload-area">
+                <label for="excelFile">
+                    <i class="fas fa-file-excel" style="font-size: 2rem; color: var(--primary-color); margin-bottom: 10px;"></i>
+                    <p>Click to upload Excel file (.xlsx)</p>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">or drag and drop</p>
+                </label>
+                <input type="file" id="excelFile" accept=".xlsx, .xls" aria-label="Upload Excel file">
+            </div>
+            
+            <div id="file-info" style="margin-bottom: 15px; font-size: 0.9rem; display: none;"></div>
+            
+            <div id="filters" style="display: none;">
+                <div class="tabs">
+                    <button class="tab-button active" onclick="switchTab(1)">Filter Set 1</button>
+                    <button class="tab-button" onclick="switchTab(2)">Filter Set 2</button>
+                </div>
+
+                <!-- Filter Set 1 -->
+                <div id="filter-set-1" class="filter-set">
+                    <details open>
+                        <summary>Main Chemistry (Required)</summary>
+                        <div class="details-content">
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="c-min-1">C Min</label>
+                                    <input type="number" id="c-min-1" step="0.001" required aria-label="Carbon minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="c-max-1">C Max</label>
+                                    <input type="number" id="c-max-1" step="0.001" required aria-label="Carbon maximum">
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="si-min-1">Si Min</label>
+                                    <input type="number" id="si-min-1" step="0.001" required aria-label="Silicon minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="si-max-1">Si Max</label>
+                                    <input type="number" id="si-max-1" step="0.001" required aria-label="Silicon maximum">
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="mn-min-1">Mn Min</label>
+                                    <input type="number" id="mn-min-1" step="0.001" required aria-label="Manganese minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="mn-max-1">Mn Max</label>
+                                    <input type="number" id="mn-max-1" step="0.001" required aria-label="Manganese maximum">
+                                </div>
+                            </div>
+                            <div class="copy-paste-buttons">
+                                <button onclick="copyFilters('main-chemistry', 1)"><i class="fas fa-copy"></i> Copy</button>
+                                <button onclick="pasteFilters('main-chemistry', 1)"><i class="fas fa-paste"></i> Paste</button>
+                            </div>
+                        </div>
+                    </details>
+                    
+                    <details>
+                        <summary>Tramp Elements (Optional)</summary>
+                        <div class="details-content">
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="p-min-1">P Min</label>
+                                    <input type="number" id="p-min-1" step="0.001" aria-label="Phosphorus minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="p-max-1">P Max</label>
+                                    <input type="number" id="p-max-1" step="0.001" aria-label="Phosphorus maximum">
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="s-min-1">S Min</label>
+                                    <input type="number" id="s-min-1" step="0.001" aria-label="Sulfur minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="s-max-1">S Max</label>
+                                    <input type="number" id="s-max-1" step="0.001" aria-label="Sulfur maximum">
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="cu-min-1">Cu Min</label>
+                                    <input type="number" id="cu-min-1" step="0.001" aria-label="Copper minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="cu-max-1">Cu Max</label>
+                                    <input type="number" id="cu-max-1" step="0.001" aria-label="Copper maximum">
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="ni-min-1">Ni Min</label>
+                                    <input type="number" id="ni-min-1" step="0.001" aria-label="Nickel minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="ni-max-1">Ni Max</label>
+                                    <input type="number" id="ni-max-1" step="0.001" aria-label="Nickel maximum">
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="cr-min-1">Cr Min</label>
+                                    <input type="number" id="cr-min-1" step="0.001" aria-label="Chromium minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="cr-max-1">Cr Max</label>
+                                    <input type="number" id="cr-max-1" step="0.001" aria-label="Chromium maximum">
+                                </div>
+                            </div>
+                            <div class="copy-paste-buttons">
+                                <button onclick="copyFilters('tramp-elements', 1)"><i class="fas fa-copy"></i> Copy</button>
+                                <button onclick="pasteFilters('tramp-elements', 1)"><i class="fas fa-paste"></i> Paste</button>
+                            </div>
+                        </div>
+                    </details>
+                    
+                    <details>
+                        <summary>Alloying Elements (Optional)</summary>
+                        <div class="details-content">
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="nb-min-1">Nb Min</label>
+                                    <input type="number" id="nb-min-1" step="0.001" aria-label="Niobium minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="nb-max-1">Nb Max</label>
+                                    <input type="number" id="nb-max-1" step="0.001" aria-label="Niobium maximum">
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="mo-min-1">Mo Min</label>
+                                    <input type="number" id="mo-min-1" step="0.001" aria-label="Molybdenum minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="mo-max-1">Mo Max</label>
+                                    <input type="number" id="mo-max-1" step="0.001" aria-label="Molybdenum maximum">
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="v-min-1">V Min</label>
+                                    <input type="number" id="v-min-1" step="0.001" aria-label="Vanadium minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="v-max-1">V Max</label>
+                                    <input type="number" id="v-max-1" step="0.001" aria-label="Vanadium maximum">
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="al-min-1">Al Min</label>
+                                    <input type="number" id="al-min-1" step="0.001" aria-label="Aluminum minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="al-max-1">Al Max</label>
+                                    <input type="number" id="al-max-1" step="0.001" aria-label="Aluminum maximum">
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="ti-min-1">Ti Min</label>
+                                    <input type="number" id="ti-min-1" step="0.001" aria-label="Titanium minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="ti-max-1">Ti Max</label>
+                                    <input type="number" id="ti-max-1" step="0.001" aria-label="Titanium maximum">
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="n-min-1">N Min</label>
+                                    <input type="number" id="n-min-1" step="0.001" aria-label="Nitrogen minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="n-max-1">N Max</label>
+                                    <input type="number" id="n-max-1" step="0.001" aria-label="Nitrogen maximum">
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="b-min-1">B Min</label>
+                                    <input type="number" id="b-min-1" step="0.001" aria-label="Boron minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="b-max-1">B Max</label>
+                                    <input type="number" id="b-max-1" step="0.001" aria-label="Boron maximum">
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="ce-min-1">Ce Min</label>
+                                    <input type="number" id="ce-min-1" step="0.001" aria-label="Cerium minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="ce-max-1">Ce Max</label>
+                                    <input type="number" id="ce-max-1" step="0.001" aria-label="Cerium maximum">
+                                </div>
+                            </div>
+                            <div class="copy-paste-buttons">
+                                <button onclick="copyFilters('alloying-elements', 1)"><i class="fas fa-copy"></i> Copy</button>
+                                <button onclick="pasteFilters('alloying-elements', 1)"><i class="fas fa-paste"></i> Paste</button>
+                            </div>
+                        </div>
+                    </details>
+                    
+                    <details>
+                        <summary>Thickness (Optional)</summary>
+                        <div class="details-content">
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="thickness-operator-1">Operator</label>
+                                    <select id="thickness-operator-1">
+                                        <option value="eq">Equals</option>
+                                        <option value="gt">Greater Than</option>
+                                        <option value="gte">Greater Than or Equal To</option>
+                                        <option value="lt">Less Than</option>
+                                        <option value="lte">Less Than or Equal To</option>
+                                        <option value="ne">Not Equal To</option>
+                                        <option value="btw">Between</option>
+                                    </select>
+                                </div>
+                                <div class="filter-item">
+                                    <label for="thickness-value-1">Value (mm)</label>
+                                    <input type="number" id="thickness-value-1" step="0.1" aria-label="Thickness value">
+                                </div>
+                                <div class="filter-item" id="thickness-value2-container-1" style="display: none;">
+                                    <label for="thickness-value2-1">Second Value (mm)</label>
+                                    <input type="number" id="thickness-value2-1" step="0.1" aria-label="Thickness second value">
+                                </div>
+                            </div>
+                            <div class="copy-paste-buttons">
+                                <button onclick="copyFilters('thickness', 1)"><i class="fas fa-copy"></i> Copy</button>
+                                <button onclick="pasteFilters('thickness', 1)"><i class="fas fa-paste"></i> Paste</button>
+                            </div>
+                        </div>
+                    </details>
+                    
+                    <details>
+                        <summary>Finishing Temperature (Optional)</summary>
+                        <div class="details-content">
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="ft-min-1">Slab Used FT Min (°C)</label>
+                                    <input type="number" id="ft-min-1" aria-label="Finishing temperature minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="ft-max-1">Slab Used FT Max (°C)</label>
+                                    <input type="number" id="ft-max-1" aria-label="Finishing temperature maximum">
+                                </div>
+                            </div>
+                            <div class="copy-paste-buttons">
+                                <button onclick="copyFilters('finishing-temperature', 1)"><i class="fas fa-copy"></i> Copy</button>
+                                <button onclick="pasteFilters('finishing-temperature', 1)"><i class="fas fa-paste"></i> Paste</button>
+                            </div>
+                        </div>
+                    </details>
+                    
+                    <details>
+                        <summary>End Product (Multiple Selection)</summary>
+                        <div class="details-content">
+                            <div id="product-checkboxes-1" class="checkbox-group"></div>
+                            <div class="copy-paste-buttons">
+                                <button onclick="copyFilters('end-product', 1)"><i class="fas fa-copy"></i> Copy</button>
+                                <button onclick="pasteFilters('end-product', 1)"><i class="fas fa-paste"></i> Paste</button>
+                            </div>
+                        </div>
+                    </details>
+                    
+                    <details open>
+                        <summary>YS Percentiles (Required)</summary>
+                        <div class="details-content">
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="ys-min-percentile-1">YS Min Percentile (%)
+                                        <span class="tooltip">
+                                            <i class="fas fa-info-circle"></i>
+                                            <span class="tooltip-text">Filter data based on the minimum percentile of Yield Strength distribution (0-100)</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" id="ys-min-percentile-1" min="0" max="100" value="25" required aria-label="YS minimum percentile">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="ys-max-percentile-1">YS Max Percentile (%)
+                                        <span class="tooltip">
+                                            <i class="fas fa-info-circle"></i>
+                                            <span class="tooltip-text">Filter data based on the maximum percentile of Yield Strength distribution (0-100)</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" id="ys-max-percentile-1" min="0" max="100" value="75" required aria-label="YS maximum percentile">
+                                </div>
+                            </div>
+                            <div class="copy-paste-buttons">
+                                <button onclick="copyFilters('ys-percentiles', 1)"><i class="fas fa-copy"></i> Copy</button>
+                                <button onclick="pasteFilters('ys-percentiles', 1)"><i class="fas fa-paste"></i> Paste</button>
+                            </div>
+                        </div>
+                    </details>
+
+                    <details open>
+                        <summary>TS Percentiles (Required)</summary>
+                        <div class="details-content">
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="ts-min-percentile-1">TS Min Percentile (%)
+                                        <span class="tooltip">
+                                            <i class="fas fa-info-circle"></i>
+                                            <span class="tooltip-text">Filter data based on the minimum percentile of Tensile Strength distribution (0-100)</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" id="ts-min-percentile-1" min="0" max="100" value="25" required aria-label="TS minimum percentile">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="ts-max-percentile-1">TS Max Percentile (%)
+                                        <span class="tooltip">
+                                            <i class="fas fa-info-circle"></i>
+                                            <span class="tooltip-text">Filter data based on the maximum percentile of Tensile Strength distribution (0-100)</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" id="ts-max-percentile-1" min="0" max="100" value="75" required aria-label="TS maximum percentile">
+                                </div>
+                            </div>
+                            <div class="copy-paste-buttons">
+                                <button onclick="copyFilters('ts-percentiles', 1)"><i class="fas fa-copy"></i> Copy</button>
+                                <button onclick="pasteFilters('ts-percentiles', 1)"><i class="fas fa-paste"></i> Paste</button>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+
+                <!-- Filter Set 2 -->
+                <div id="filter-set-2" class="filter-set" style="display: none;">
+                    <details open>
+                        <summary>Main Chemistry (Required)</summary>
+                        <div class="details-content">
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="c-min-2">C Min</label>
+                                    <input type="number" id="c-min-2" step="0.001" required aria-label="Carbon minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="c-max-2">C Max</label>
+                                    <input type="number" id="c-max-2" step="0.001" required aria-label="Carbon maximum">
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="si-min-2">Si Min</label>
+                                    <input type="number" id="si-min-2" step="0.001" required aria-label="Silicon minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="si-max-2">Si Max</label>
+                                    <input type="number" id="si-max-2" step="0.001" required aria-label="Silicon maximum">
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="mn-min-2">Mn Min</label>
+                                    <input type="number" id="mn-min-2" step="0.001" required aria-label="Manganese minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="mn-max-2">Mn Max</label>
+                                    <input type="number" id="mn-max-2" step="0.001" required aria-label="Manganese maximum">
+                                </div>
+                            </div>
+                            <div class="copy-paste-buttons">
+                                <button onclick="copyFilters('main-chemistry', 2)"><i class="fas fa-copy"></i> Copy</button>
+                                <button onclick="pasteFilters('main-chemistry', 2)"><i class="fas fa-paste"></i> Paste</button>
+                            </div>
+                        </div>
+                    </details>
+                    
+                    <details>
+                        <summary>Tramp Elements (Optional)</summary>
+                        <div class="details-content">
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="p-min-2">P Min</label>
+                                    <input type="number" id="p-min-2" step="0.001" aria-label="Phosphorus minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="p-max-2">P Max</label>
+                                    <input type="number" id="p-max-2" step="0.001" aria-label="Phosphorus maximum">
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="s-min-2">S Min</label>
+                                    <input type="number" id="s-min-2" step="0.001" aria-label="Sulfur minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="s-max-2">S Max</label>
+                                    <input type="number" id="s-max-2" step="0.001" aria-label="Sulfur maximum">
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="cu-min-2">Cu Min</label>
+                                    <input type="number" id="cu-min-2" step="0.001" aria-label="Copper minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="cu-max-2">Cu Max</label>
+                                    <input type="number" id="cu-max-2" step="0.001" aria-label="Copper maximum">
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="ni-min-2">Ni Min</label>
+                                    <input type="number" id="ni-min-2" step="0.001" aria-label="Nickel minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="ni-max-2">Ni Max</label>
+                                    <input type="number" id="ni-max-2" step="0.001" aria-label="Nickel maximum">
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="cr-min-2">Cr Min</label>
+                                    <input type="number" id="cr-min-2" step="0.001" aria-label="Chromium minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="cr-max-2">Cr Max</label>
+                                    <input type="number" id="cr-max-2" step="0.001" aria-label="Chromium maximum">
+                                </div>
+                            </div>
+                            <div class="copy-paste-buttons">
+                                <button onclick="copyFilters('tramp-elements', 2)"><i class="fas fa-copy"></i> Copy</button>
+                                <button onclick="pasteFilters('tramp-elements', 2)"><i class="fas fa-paste"></i> Paste</button>
+                            </div>
+                        </div>
+                    </details>
+                    
+                    <details>
+                        <summary>Alloying Elements (Optional)</summary>
+                        <div class="details-content">
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="nb-min-2">Nb Min</label>
+                                    <input type="number" id="nb-min-2" step="0.001" aria-label="Niobium minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="nb-max-2">Nb Max</label>
+                                    <input type="number" id="nb-max-2" step="0.001" aria-label="Niobium maximum">
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="mo-min-2">Mo Min</label>
+                                    <input type="number" id="mo-min-2" step="0.001" aria-label="Molybdenum minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="mo-max-2">Mo Max</label>
+                                    <input type="number" id="mo-max-2" step="0.001" aria-label="Molybdenum maximum">
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="v-min-2">V Min</label>
+                                    <input type="number" id="v-min-2" step="0.001" aria-label="Vanadium minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="v-max-2">V Max</label>
+                                    <input type="number" id="v-max-2" step="0.001" aria-label="Vanadium maximum">
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="al-min-2">Al Min</label>
+                                    <input type="number" id="al-min-2" step="0.001" aria-label="Aluminum minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="al-max-2">Al Max</label>
+                                    <input type="number" id="al-max-2" step="0.001" aria-label="Aluminum maximum">
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="ti-min-2">Ti Min</label>
+                                    <input type="number" id="ti-min-2" step="0.001" aria-label="Titanium minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="ti-max-2">Ti Max</label>
+                                    <input type="number" id="ti-max-2" step="0.001" aria-label="Titanium maximum">
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="n-min-2">N Min</label>
+                                    <input type="number" id="n-min-2" step="0.001" aria-label="Nitrogen minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="n-max-2">N Max</label>
+                                    <input type="number" id="n-max-2" step="0.001" aria-label="Nitrogen maximum">
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="b-min-2">B Min</label>
+                                    <input type="number" id="b-min-2" step="0.001" aria-label="Boron minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="b-max-2">B Max</label>
+                                    <input type="number" id="b-max-2" step="0.001" aria-label="Boron maximum">
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="ce-min-2">Ce Min</label>
+                                    <input type="number" id="ce-min-2" step="0.001" aria-label="Cerium minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="ce-max-2">Ce Max</label>
+                                    <input type="number" id="ce-max-2" step="0.001" aria-label="Cerium maximum">
+                                </div>
+                            </div>
+                            <div class="copy-paste-buttons">
+                                <button onclick="copyFilters('alloying-elements', 2)"><i class="fas fa-copy"></i> Copy</button>
+                                <button onclick="pasteFilters('alloying-elements', 2)"><i class="fas fa-paste"></i> Paste</button>
+                            </div>
+                        </div>
+                    </details>
+                    
+                    <details>
+                        <summary>Thickness (Optional)</summary>
+                        <div class="details-content">
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="thickness-operator-2">Operator</label>
+                                    <select id="thickness-operator-2">
+                                        <option value="eq">Equals</option>
+                                        <option value="gt">Greater Than</option>
+                                        <option value="gte">Greater Than or Equal To</option>
+                                        <option value="lt">Less Than</option>
+                                        <option value="lte">Less Than or Equal To</option>
+                                        <option value="ne">Not Equal To</option>
+                                        <option value="btw">Between</option>
+                                    </select>
+                                </div>
+                                <div class="filter-item">
+                                    <label for="thickness-value-2">Value (mm)</label>
+                                    <input type="number" id="thickness-value-2" step="0.1" aria-label="Thickness value">
+                                </div>
+                                <div class="filter-item" id="thickness-value2-container-2" style="display: none;">
+                                    <label for="thickness-value2-2">Second Value (mm)</label>
+                                    <input type="number" id="thickness-value2-2" step="0.1" aria-label="Thickness second value">
+                                </div>
+                            </div>
+                            <div class="copy-paste-buttons">
+                                <button onclick="copyFilters('thickness', 2)"><i class="fas fa-copy"></i> Copy</button>
+                                <button onclick="pasteFilters('thickness', 2)"><i class="fas fa-paste"></i> Paste</button>
+                            </div>
+                        </div>
+                    </details>
+                    
+                    <details>
+                        <summary>Finishing Temperature (Optional)</summary>
+                        <div class="details-content">
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="ft-min-2">Slab Used FT Min (°C)</label>
+                                    <input type="number" id="ft-min-2" aria-label="Finishing temperature minimum">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="ft-max-2">Slab Used FT Max (°C)</label>
+                                    <input type="number" id="ft-max-2" aria-label="Finishing temperature maximum">
+                                </div>
+                            </div>
+                            <div class="copy-paste-buttons">
+                                <button onclick="copyFilters('finishing-temperature', 2)"><i class="fas fa-copy"></i> Copy</button>
+                                <button onclick="pasteFilters('finishing-temperature', 2)"><i class="fas fa-paste"></i> Paste</button>
+                            </div>
+                        </div>
+                    </details>
+                    
+                    <details>
+                        <summary>End Product (Multiple Selection)</summary>
+                        <div class="details-content">
+                            <div id="product-checkboxes-2" class="checkbox-group"></div>
+                            <div class="copy-paste-buttons">
+                                <button onclick="copyFilters('end-product', 2)"><i class="fas fa-copy"></i> Copy</button>
+                                <button onclick="pasteFilters('end-product', 2)"><i class="fas fa-paste"></i> Paste</button>
+                            </div>
+                        </div>
+                    </details>
+                    
+                    <details open>
+                        <summary>YS Percentiles (Required)</summary>
+                        <div class="details-content">
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="ys-min-percentile-2">YS Min Percentile (%)
+                                        <span class="tooltip">
+                                            <i class="fas fa-info-circle"></i>
+                                            <span class="tooltip-text">Filter data based on the minimum percentile of Yield Strength distribution (0-100)</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" id="ys-min-percentile-2" min="0" max="100" value="25" required aria-label="YS minimum percentile">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="ys-max-percentile-2">YS Max Percentile (%)
+                                        <span class="tooltip">
+                                            <i class="fas fa-info-circle"></i>
+                                            <span class="tooltip-text">Filter data based on the maximum percentile of Yield Strength distribution (0-100)</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" id="ys-max-percentile-2" min="0" max="100" value="75" required aria-label="YS maximum percentile">
+                                </div>
+                            </div>
+                            <div class="copy-paste-buttons">
+                                <button onclick="copyFilters('ys-percentiles', 2)"><i class="fas fa-copy"></i> Copy</button>
+                                <button onclick="pasteFilters('ys-percentiles', 2)"><i class="fas fa-paste"></i> Paste</button>
+                            </div>
+                        </div>
+                    </details>
+
+                    <details open>
+                        <summary>TS Percentiles (Required)</summary>
+                        <div class="details-content">
+                            <div class="filter-row">
+                                <div class="filter-item">
+                                    <label for="ts-min-percentile-2">TS Min Percentile (%)
+                                        <span class="tooltip">
+                                            <i class="fas fa-info-circle"></i>
+                                            <span class="tooltip-text">Filter data based on the minimum percentile of Tensile Strength distribution (0-100)</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" id="ts-min-percentile-2" min="0" max="100" value="25" required aria-label="TS minimum percentile">
+                                </div>
+                                <div class="filter-item">
+                                    <label for="ts-max-percentile-2">TS Max Percentile (%)
+                                        <span class="tooltip">
+                                            <i class="fas fa-info-circle"></i>
+                                            <span class="tooltip-text">Filter data based on the maximum percentile of Tensile Strength distribution (0-100)</span>
+                                        </span>
+                                    </label>
+                                    <input type="number" id="ts-max-percentile-2" min="0" max="100" value="75" required aria-label="TS maximum percentile">
+                                </div>
+                            </div>
+                            <div class="copy-paste-buttons">
+                                <button onclick="copyFilters('ts-percentiles', 2)"><i class="fas fa-copy"></i> Copy</button>
+                                <button onclick="pasteFilters('ts-percentiles', 2)"><i class="fas fa-paste"></i> Paste</button>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+                
+                <div class="button-group">
+                    <button id="apply-filters" aria-label="Apply filters"><i class="fas fa-filter"></i> Apply Filters</button>
+                    <button id="reset-filters" class="secondary" aria-label="Reset filters"><i class="fas fa-undo"></i> Reset</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <h1>Metallurgical Data Analyzer</h1>
+            
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>Processing data, please wait...</p>
+            </div>
+            
+            <div id="alert-success" class="alert alert-success"></div>
+            <div id="alert-error" class="alert alert-error"></div>
+            <div id="alert-warning" class="alert alert-warning"></div>
+            
+            <div id="results" class="results-section">
+                <div class="card">
+                    <h2>Analysis Results</h2>
+                    <p id="filter-summary"></p>
+                    <p id="data-count"></p>
+                </div>
+                
+                <div class="card">
+                    <h2>Mechanical Properties Statistics - Set 1</h2>
+                    <div class="table-responsive">
+                        <table class="stats-table" id="mechanical-stats-1">
+                            <thead>
+                                <tr>
+                                    <th>Statistic</th>
+                                    <th>YS</th>
+                                    <th>TS</th>
+                                    <th>El</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Mechanical Properties Statistics - Set 2</h2>
+                    <div class="table-responsive">
+                        <table class="stats-table" id="mechanical-stats-2">
+                            <thead>
+                                <tr>
+                                    <th>Statistic</th>
+                                    <th>YS</th>
+                                    <th>TS</th>
+                                    <th>El</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2>Distribution Curves</h2>
+                    <div>
+                        <h3>Yield Strength (YS) Distribution</h3>
+                        <div id="ys-chart" class="chart-container"></div>
+                        
+                        <h3>Tensile Strength (TS) Distribution</h3>
+                        <div id="ts-chart" class="chart-container"></div>
+                        
+                        <h3>Elongation (El) Distribution</h3>
+                        <div id="el-chart" class="chart-container"></div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2>Chemistry Statistics</h2>
+                    <div class="table-responsive">
+                        <table class="stats-table" id="chemistry-stats">
+                            <thead>
+                                <tr>
+                                    <th>Element</th>
+                                    <th>Min</th>
+                                    <th>Max</th>
+                                    <th>Average</th>
+                                    <th>Std Dev</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2>Filtered Data Sample (First 5 Rows Each Set)</h2>
+                    <div class="table-responsive">
+                        <div id="data-table-container" style="overflow-x: auto;">
+                            <table class="stats-table" id="data-table">
+                                <thead></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                        <div id="pagination" class="pagination"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="instructions" class="card">
+                <h2>Instructions</h2>
+                <ol>
+                    <li>Upload your Excel file with metallurgical data</li>
+                    <li>Set filters for two different analyses using the tabs</li>
+                    <li>Click "Apply Filters" to process the data</li>
+                    <li>View statistics, distribution curves, and sample data for both filter sets</li>
+                    <li>Use "Reset Filters" to start over</li>
+                </ol>
+            </div>
+            
+            <footer>
+                Metallurgical Data Analyzer | Client-Side Application
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let fullData = [];
+        let filteredData1 = [];
+        let filteredData2 = [];
+        let columnNames = [];
+        let productValues = [];
+        let currentPage = 1;
+        const rowsPerPage = 10;
+        let activeTab = 1;
+        let copiedFilters = {};
+
+        // Element references
+        const fileInput = document.getElementById('excelFile');
+        const uploadArea = document.getElementById('upload-area');
+        const fileInfo = document.getElementById('file-info');
+        const filtersDiv = document.getElementById('filters');
+        const loadingDiv = document.getElementById('loading');
+        const resultsDiv = document.getElementById('results');
+        const instructionsDiv = document.getElementById('instructions');
+        const alertSuccess = document.getElementById('alert-success');
+        const alertError = document.getElementById('alert-error');
+        const alertWarning = document.getElementById('alert-warning');
+        const applyFiltersBtn = document.getElementById('apply-filters');
+        const resetFiltersBtn = document.getElementById('reset-filters');
+        const filterSummary = document.getElementById('filter-summary');
+        const dataCount = document.getElementById('data-count');
+
+        // Function to switch tabs
+        function switchTab(tabNumber) {
+            activeTab = tabNumber;
+            document.getElementById('filter-set-1').style.display = tabNumber === 1 ? 'block' : 'none';
+            document.getElementById('filter-set-2').style.display = tabNumber === 2 ? 'block' : 'none';
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.tab-button:nth-child(${tabNumber})`).classList.add('active');
+        }
+
+        // Initialize event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            fileInput.addEventListener('change', handleFileUpload);
+            applyFiltersBtn.addEventListener('click', applyFilters);
+            resetFiltersBtn.addEventListener('click', resetFilters);
+
+            // Drag and drop functionality
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                this.style.borderColor = '#007bff';
+                this.style.backgroundColor = 'rgba(0, 123, 255, 0.1)';
+            });
+
+            uploadArea.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                this.style.borderColor = '#dee2e6';
+                this.style.backgroundColor = '';
+            });
+
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.style.borderColor = '#dee2e6';
+                this.style.backgroundColor = '';
+                if (e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                    handleFileUpload();
+                }
+            });
+
+            // Thickness operator listeners
+            [1, 2].forEach(set => {
+                const operatorSelect = document.getElementById(`thickness-operator-${set}`);
+                const value2Container = document.getElementById(`thickness-value2-container-${set}`);
+                
+                operatorSelect.addEventListener('change', function() {
+                    value2Container.style.display = this.value === 'btw' ? 'block' : 'none';
+                });
+            });
+
+            // Default to Filter Set 1
+            switchTab(1);
+        });
+
+        // Function to handle file upload
+        function handleFileUpload() {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            loadingDiv.style.display = 'block';
+            fileInfo.innerHTML = `<strong>File:</strong> ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+            fileInfo.style.display = 'block';
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    fullData = XLSX.utils.sheet_to_json(worksheet);
+                    columnNames = Object.keys(fullData[0] || {});
+                    productValues = [...new Set(fullData.map(row => row.Product).filter(Boolean))];
+                    
+                    populateProductCheckboxes();
+                    filtersDiv.style.display = 'block';
+                    instructionsDiv.style.display = 'none';
+                    showAlert('success', `Successfully loaded data with ${fullData.length} rows.`);
+                    populateInitialRanges();
+                    loadingDiv.style.display = 'none';
+                } catch (error) {
+                    console.error('Error processing file:', error);
+                    showAlert('error', 'Error processing file. Please check the format and try again.');
+                    loadingDiv.style.display = 'none';
+                }
+            };
+            reader.onerror = function() {
+                showAlert('error', 'Error reading file.');
+                loadingDiv.style.display = 'none';
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Function to populate product checkboxes
+        function populateProductCheckboxes() {
+            [1, 2].forEach(set => {
+                const productCheckboxes = document.getElementById(`product-checkboxes-${set}`);
+                productCheckboxes.innerHTML = '';
+                productValues.forEach(product => {
+                    const checkboxItem = document.createElement('div');
+                    checkboxItem.className = 'checkbox-item';
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = `product-${product.replace(/\s+/g, '-').toLowerCase()}-${set}`;
+                    checkbox.value = product;
+                    checkbox.checked = true;
+                    const label = document.createElement('label');
+                    label.htmlFor = checkbox.id;
+                    label.textContent = product;
+                    checkboxItem.appendChild(checkbox);
+                    checkboxItem.appendChild(label);
+                    productCheckboxes.appendChild(checkboxItem);
+                });
+            });
+        }
+
+        // Function to populate initial ranges
+        function populateInitialRanges() {
+            if (!fullData.length) return;
+            const elements = ['C', 'Si', 'Mn', 'P', 'S', 'Cu', 'Ni', 'Cr', 'Nb', 'Mo', 'V', 'Al', 'Ti', 'N', 'B', 'Ce'];
+            [1, 2].forEach(set => {
+                elements.forEach(element => {
+                    const values = fullData.map(row => row[element]).filter(v => v !== undefined && v !== null);
+                    if (!values.length) return;
+                    const min = Math.min(...values);
+                    const max = Math.max(...values);
+                    const minInput = document.getElementById(`${element.toLowerCase()}-min-${set}`);
+                    const maxInput = document.getElementById(`${element.toLowerCase()}-max-${set}`);
+                    if (minInput && maxInput && ['C', 'Si', 'Mn'].includes(element)) {
+                        minInput.value = min.toFixed(3);
+                        maxInput.value = max.toFixed(3);
+                    }
+                });
+                const ftValues = fullData.map(row => row['Slab Used FT (dC)']).filter(v => v !== undefined && v !== null);
+                if (ftValues.length) {
+                    const ftMin = Math.min(...ftValues);
+                    const ftMax = Math.max(...ftValues);
+                    document.getElementById(`ft-min-${set}`).value = Math.floor(ftMin);
+                    document.getElementById(`ft-max-${set}`).value = Math.ceil(ftMax);
+                }
+            });
+        }
+
+        // Copy Filters Function
+        function copyFilters(section, set) {
+            const source = set === 1 ? 1 : 2;
+            const target = set === 1 ? 2 : 1;
+            const suffix = `-${source}`;
+            let values = {};
+
+            switch(section) {
+                case 'main-chemistry':
+                    values = {
+                        'c-min': document.getElementById(`c-min${suffix}`).value,
+                        'c-max': document.getElementById(`c-max${suffix}`).value,
+                        'si-min': document.getElementById(`si-min${suffix}`).value,
+                        'si-max': document.getElementById(`si-max${suffix}`).value,
+                        'mn-min': document.getElementById(`mn-min${suffix}`).value,
+                        'mn-max': document.getElementById(`mn-max${suffix}`).value
+                    };
+                    break;
+                case 'tramp-elements':
+                    values = {
+                        'p-min': document.getElementById(`p-min${suffix}`).value,
+                        'p-max': document.getElementById(`p-max${suffix}`).value,
+                        's-min': document.getElementById(`s-min${suffix}`).value,
+                        's-max': document.getElementById(`s-max${suffix}`).value,
+                        'cu-min': document.getElementById(`cu-min${suffix}`).value,
+                        'cu-max': document.getElementById(`cu-max${suffix}`).value,
+                        'ni-min': document.getElementById(`ni-min${suffix}`).value,
+                        'ni-max': document.getElementById(`ni-max${suffix}`).value,
+                        'cr-min': document.getElementById(`cr-min${suffix}`).value,
+                        'cr-max': document.getElementById(`cr-max${suffix}`).value
+                    };
+                    break;
+                case 'alloying-elements':
+                    values = {
+                        'nb-min': document.getElementById(`nb-min${suffix}`).value,
+                        'nb-max': document.getElementById(`nb-max${suffix}`).value,
+                        'mo-min': document.getElementById(`mo-min${suffix}`).value,
+                        'mo-max': document.getElementById(`mo-max${suffix}`).value,
+                        'v-min': document.getElementById(`v-min${suffix}`).value,
+                        'v-max': document.getElementById(`v-max${suffix}`).value,
+                        'al-min': document.getElementById(`al-min${suffix}`).value,
+                        'al-max': document.getElementById(`al-max${suffix}`).value,
+                        'ti-min': document.getElementById(`ti-min${suffix}`).value,
+                        'ti-max': document.getElementById(`ti-max${suffix}`).value,
+                        'n-min': document.getElementById(`n-min${suffix}`).value,
+                        'n-max': document.getElementById(`n-max${suffix}`).value,
+                        'b-min': document.getElementById(`b-min${suffix}`).value,
+                        'b-max': document.getElementById(`b-max${suffix}`).value,
+                        'ce-min': document.getElementById(`ce-min${suffix}`).value,
+                        'ce-max': document.getElementById(`ce-max${suffix}`).value
+                    };
+                    break;
+                case 'thickness':
+                    values = {
+                        'operator': document.getElementById(`thickness-operator${suffix}`).value,
+                        'value': document.getElementById(`thickness-value${suffix}`).value,
+                        'value2': document.getElementById(`thickness-value2${suffix}`).value
+                    };
+                    break;
+                case 'finishing-temperature':
+                    values = {
+                        'ft-min': document.getElementById(`ft-min${suffix}`).value,
+                        'ft-max': document.getElementById(`ft-max${suffix}`).value
+                    };
+                    break;
+                case 'end-product':
+                    values = Array.from(document.querySelectorAll(`#product-checkboxes-${source} input[type="checkbox"]`))
+                        .reduce((acc, checkbox) => {
+                            acc[checkbox.id] = checkbox.checked;
+                            return acc;
+                        }, {});
+                    break;
+                case 'ys-percentiles':
+                    values = {
+                        'ys-min': document.getElementById(`ys-min-percentile${suffix}`).value,
+                        'ys-max': document.getElementById(`ys-max-percentile${suffix}`).value
+                    };
+                    break;
+                case 'ts-percentiles':
+                    values = {
+                        'ts-min': document.getElementById(`ts-min-percentile${suffix}`).value,
+                        'ts-max': document.getElementById(`ts-max-percentile${suffix}`).value
+                    };
+                    break;
+            }
+            copiedFilters[section] = values;
+            showAlert('success', `Copied ${section.replace('-', ' ')} filters from Set ${source}.`);
+        }
+
+        // Paste Filters Function
+        function pasteFilters(section, set) {
+            if (!copiedFilters[section]) {
+                showAlert('warning', `No copied data for ${section.replace('-', ' ')}.`);
+                return;
+            }
+            const target = set === 1 ? 1 : 2;
+            const suffix = `-${target}`;
+            const values = copiedFilters[section];
+
+            switch(section) {
+                case 'main-chemistry':
+                    document.getElementById(`c-min${suffix}`).value = values['c-min'] || '';
+                    document.getElementById(`c-max${suffix}`).value = values['c-max'] || '';
+                    document.getElementById(`si-min${suffix}`).value = values['si-min'] || '';
+                    document.getElementById(`si-max${suffix}`).value = values['si-max'] || '';
+                    document.getElementById(`mn-min${suffix}`).value = values['mn-min'] || '';
+                    document.getElementById(`mn-max${suffix}`).value = values['mn-max'] || '';
+                    break;
+                case 'tramp-elements':
+                    document.getElementById(`p-min${suffix}`).value = values['p-min'] || '';
+                    document.getElementById(`p-max${suffix}`).value = values['p-max'] || '';
+                    document.getElementById(`s-min${suffix}`).value = values['s-min'] || '';
+                    document.getElementById(`s-max${suffix}`).value = values['s-max'] || '';
+                    document.getElementById(`cu-min${suffix}`).value = values['cu-min'] || '';
+                    document.getElementById(`cu-max${suffix}`).value = values['cu-max'] || '';
+                    document.getElementById(`ni-min${suffix}`).value = values['ni-min'] || '';
+                    document.getElementById(`ni-max${suffix}`).value = values['ni-max'] || '';
+                    document.getElementById(`cr-min${suffix}`).value = values['cr-min'] || '';
+                    document.getElementById(`cr-max${suffix}`).value = values['cr-max'] || '';
+                    break;
+                case 'alloying-elements':
+                    document.getElementById(`nb-min${suffix}`).value = values['nb-min'] || '';
+                    document.getElementById(`nb-max${suffix}`).value = values['nb-max'] || '';
+                    document.getElementById(`mo-min${suffix}`).value = values['mo-min'] || '';
+                    document.getElementById(`mo-max${suffix}`).value = values['mo-max'] || '';
+                    document.getElementById(`v-min${suffix}`).value = values['v-min'] || '';
+                    document.getElementById(`v-max${suffix}`).value = values['v-max'] || '';
+                    document.getElementById(`al-min${suffix}`).value = values['al-min'] || '';
+                    document.getElementById(`al-max${suffix}`).value = values['al-max'] || '';
+                    document.getElementById(`ti-min${suffix}`).value = values['ti-min'] || '';
+                    document.getElementById(`ti-max${suffix}`).value = values['ti-max'] || '';
+                    document.getElementById(`n-min${suffix}`).value = values['n-min'] || '';
+                    document.getElementById(`n-max${suffix}`).value = values['n-max'] || '';
+                    document.getElementById(`b-min${suffix}`).value = values['b-min'] || '';
+                    document.getElementById(`b-max${suffix}`).value = values['b-max'] || '';
+                    document.getElementById(`ce-min${suffix}`).value = values['ce-min'] || '';
+                    document.getElementById(`ce-max${suffix}`).value = values['ce-max'] || '';
+                    break;
+                case 'thickness':
+                    document.getElementById(`thickness-operator${suffix}`).value = values['operator'] || 'eq';
+                    document.getElementById(`thickness-value${suffix}`).value = values['value'] || '';
+                    document.getElementById(`thickness-value2${suffix}`).value = values['value2'] || '';
+                    document.getElementById(`thickness-value2-container${suffix}`).style.display = values['operator'] === 'btw' ? 'block' : 'none';
+                    break;
+                case 'finishing-temperature':
+                    document.getElementById(`ft-min${suffix}`).value = values['ft-min'] || '';
+                    document.getElementById(`ft-max${suffix}`).value = values['ft-max'] || '';
+                    break;
+                case 'end-product':
+                    document.querySelectorAll(`#product-checkboxes-${target} input[type="checkbox"]`).forEach(checkbox => {
+                        checkbox.checked = values[checkbox.id] || false;
+                    });
+                    break;
+                case 'ys-percentiles':
+                    document.getElementById(`ys-min-percentile${suffix}`).value = values['ys-min'] || '25';
+                    document.getElementById(`ys-max-percentile${suffix}`).value = values['ys-max'] || '75';
+                    break;
+                case 'ts-percentiles':
+                    document.getElementById(`ts-min-percentile${suffix}`).value = values['ts-min'] || '25';
+                    document.getElementById(`ts-max-percentile${suffix}`).value = values['ts-max'] || '75';
+                    break;
+            }
+            showAlert('success', `Pasted ${section.replace('-', ' ')} filters to Set ${target}.`);
+        }
+
+        // Function to apply filters
+        function applyFilters() {
+            if (!fullData.length) {
+                showAlert('warning', 'No data to filter. Please upload a file first.');
+                return;
+            }
+
+            loadingDiv.style.display = 'block';
+            const filters = {
+                1: getFilterValues(1),
+                2: getFilterValues(2)
+            };
+
+            try {
+                filteredData1 = filterData(fullData, filters[1]);
+                filteredData2 = filterData(fullData, filters[2]);
+                updateResults();
+                showAlert('success', `Filtered data: Set 1 - ${filteredData1.length} rows, Set 2 - ${filteredData2.length} rows`);
+            } catch (error) {
+                console.error('Error filtering data:', error);
+                showAlert('error', 'An error occurred during filtering. Please check your inputs.');
+            }
+            loadingDiv.style.display = 'none';
+        }
+
+        // Helper function to get filter values
+        function getFilterValues(set) {
+            const suffix = `-${set}`;
+            return {
+                C: {
+                    min: parseFloat(document.getElementById(`c-min${suffix}`).value),
+                    max: parseFloat(document.getElementById(`c-max${suffix}`).value)
+                },
+                Si: {
+                    min: parseFloat(document.getElementById(`si-min${suffix}`).value),
+                    max: parseFloat(document.getElementById(`si-max${suffix}`).value)
+                },
+                Mn: {
+                    min: parseFloat(document.getElementById(`mn-min${suffix}`).value),
+                    max: parseFloat(document.getElementById(`mn-max${suffix}`).value)
+                },
+                P: {
+                    min: document.getElementById(`p-min${suffix}`).value ? parseFloat(document.getElementById(`p-min${suffix}`).value) : null,
+                    max: document.getElementById(`p-max${suffix}`).value ? parseFloat(document.getElementById(`p-max${suffix}`).value) : null
+                },
+                S: {
+                    min: document.getElementById(`s-min${suffix}`).value ? parseFloat(document.getElementById(`s-min${suffix}`).value) : null,
+                    max: document.getElementById(`s-max${suffix}`).value ? parseFloat(document.getElementById(`s-max${suffix}`).value) : null
+                },
+                Cu: {
+                    min: document.getElementById(`cu-min${suffix}`).value ? parseFloat(document.getElementById(`cu-min${suffix}`).value) : null,
+                    max: document.getElementById(`cu-max${suffix}`).value ? parseFloat(document.getElementById(`cu-max${suffix}`).value) : null
+                },
+                Ni: {
+                    min: document.getElementById(`ni-min${suffix}`).value ? parseFloat(document.getElementById(`ni-min${suffix}`).value) : null,
+                    max: document.getElementById(`ni-max${suffix}`).value ? parseFloat(document.getElementById(`ni-max${suffix}`).value) : null
+                },
+                Cr: {
+                    min: document.getElementById(`cr-min${suffix}`).value ? parseFloat(document.getElementById(`cr-min${suffix}`).value) : null,
+                    max: document.getElementById(`cr-max${suffix}`).value ? parseFloat(document.getElementById(`cr-max${suffix}`).value) : null
+                },
+                Nb: {
+                    min: document.getElementById(`nb-min${suffix}`).value ? parseFloat(document.getElementById(`nb-min${suffix}`).value) : null,
+                    max: document.getElementById(`nb-max${suffix}`).value ? parseFloat(document.getElementById(`nb-max${suffix}`).value) : null
+                },
+                Mo: {
+                    min: document.getElementById(`mo-min${suffix}`).value ? parseFloat(document.getElementById(`mo-min${suffix}`).value) : null,
+                    max: document.getElementById(`mo-max${suffix}`).value ? parseFloat(document.getElementById(`mo-max${suffix}`).value) : null
+                },
+                V: {
+                    min: document.getElementById(`v-min${suffix}`).value ? parseFloat(document.getElementById(`v-min${suffix}`).value) : null,
+                    max: document.getElementById(`v-max${suffix}`).value ? parseFloat(document.getElementById(`v-max${suffix}`).value) : null
+                },
+                Al: {
+                    min: document.getElementById(`al-min${suffix}`).value ? parseFloat(document.getElementById(`al-min${suffix}`).value) : null,
+                    max: document.getElementById(`al-max${suffix}`).value ? parseFloat(document.getElementById(`al-max${suffix}`).value) : null
+                },
+                Ti: {
+                    min: document.getElementById(`ti-min${suffix}`).value ? parseFloat(document.getElementById(`ti-min${suffix}`).value) : null,
+                    max: document.getElementById(`ti-max${suffix}`).value ? parseFloat(document.getElementById(`ti-max${suffix}`).value) : null
+                },
+                N: {
+                    min: document.getElementById(`n-min${suffix}`).value ? parseFloat(document.getElementById(`n-min${suffix}`).value) : null,
+                    max: document.getElementById(`n-max${suffix}`).value ? parseFloat(document.getElementById(`n-max${suffix}`).value) : null
+                },
+                B: {
+                    min: document.getElementById(`b-min${suffix}`).value ? parseFloat(document.getElementById(`b-min${suffix}`).value) : null,
+                    max: document.getElementById(`b-max${suffix}`).value ? parseFloat(document.getElementById(`b-max${suffix}`).value) : null
+                },
+                Ce: {
+                    min: document.getElementById(`ce-min${suffix}`).value ? parseFloat(document.getElementById(`ce-min${suffix}`).value) : null,
+                    max: document.getElementById(`ce-max${suffix}`).value ? parseFloat(document.getElementById(`ce-max${suffix}`).value) : null
+                },
+                Thickness: {
+                    operator: document.getElementById(`thickness-operator${suffix}`).value,
+                    value: document.getElementById(`thickness-value${suffix}`).value ? parseFloat(document.getElementById(`thickness-value${suffix}`).value) : null,
+                    value2: document.getElementById(`thickness-value2${suffix}`).value ? parseFloat(document.getElementById(`thickness-value2${suffix}`).value) : null
+                },
+                FT: {
+                    min: document.getElementById(`ft-min${suffix}`).value ? parseFloat(document.getElementById(`ft-min${suffix}`).value) : null,
+                    max: document.getElementById(`ft-max${suffix}`).value ? parseFloat(document.getElementById(`ft-max${suffix}`).value) : null
+                },
+                ysPercentiles: {
+                    min: parseFloat(document.getElementById(`ys-min-percentile${suffix}`).value) / 100,
+                    max: parseFloat(document.getElementById(`ys-max-percentile${suffix}`).value) / 100
+                },
+                tsPercentiles: {
+                    min: parseFloat(document.getElementById(`ts-min-percentile${suffix}`).value) / 100,
+                    max: parseFloat(document.getElementById(`ts-max-percentile${suffix}`).value) / 100
+                }
+            };
+        }
+
+        // Function to filter data
+        function filterData(data, filters) {
+            let filtered = data.filter(row => {
+                if (isNaN(filters.C.min) || isNaN(filters.C.max) || 
+                    isNaN(filters.Si.min) || isNaN(filters.Si.max) || 
+                    isNaN(filters.Mn.min) || isNaN(filters.Mn.max) ||
+                    isNaN(filters.ysPercentiles.min) || isNaN(filters.ysPercentiles.max) ||
+                    isNaN(filters.tsPercentiles.min) || isNaN(filters.tsPercentiles.max)) {
+                    return true; // Skip filtering if required fields are not filled
+                }
+
+                if (row.C < filters.C.min || row.C > filters.C.max) return false;
+                if (row.Si < filters.Si.min || row.Si > filters.Si.max) return false;
+                if (row.Mn < filters.Mn.min || row.Mn > filters.Mn.max) return false;
+
+                if (filters.P.min !== null && (row.P < filters.P.min || row.P > filters.P.max)) return false;
+                if (filters.S.min !== null && (row.S < filters.S.min || row.S > filters.S.max)) return false;
+                if (filters.Cu.min !== null && (row.Cu < filters.Cu.min || row.Cu > filters.Cu.max)) return false;
+                if (filters.Ni.min !== null && (row.Ni < filters.Ni.min || row.Ni > filters.Ni.max)) return false;
+                if (filters.Cr.min !== null && (row.Cr < filters.Cr.min || row.Cr > filters.Cr.max)) return false;
+                if (filters.Nb.min !== null && (row.Nb < filters.Nb.min || row.Nb > filters.Nb.max)) return false;
+                if (filters.Mo.min !== null && (row.Mo < filters.Mo.min || row.Mo > filters.Mo.max)) return false;
+                if (filters.V.min !== null && (row.V < filters.V.min || row.V > filters.V.max)) return false;
+                if (filters.Al.min !== null && (row.Al < filters.Al.min || row.Al > filters.Al.max)) return false;
+                if (filters.Ti.min !== null && (row.Ti < filters.Ti.min || row.Ti > filters.Ti.max)) return false;
+                if (filters.N.min !== null && (row.N < filters.N.min || row.N > filters.N.max)) return false;
+                if (filters.B.min !== null && (row.B < filters.B.min || row.B > filters.B.max)) return false;
+                if (filters.Ce.min !== null && (row.Ce < filters.Ce.min || row.Ce > filters.Ce.max)) return false;
+
+                if (filters.Thickness.value !== null && row.Thickness !== undefined) {
+                    const t = row.Thickness;
+                    const v1 = filters.Thickness.value;
+                    const v2 = filters.Thickness.value2;
+                    switch(filters.Thickness.operator) {
+                        case 'eq': if (t !== v1) return false; break;
+                        case 'gt': if (t <= v1) return false; break;
+                        case 'gte': if (t < v1) return false; break;
+                        case 'lt': if (t >= v1) return false; break;
+                        case 'lte': if (t > v1) return false; break;
+                        case 'ne': if (t === v1) return false; break;
+                        case 'btw': if (v2 === null || t < v1 || t > v2) return false; break;
+                    }
+                }
+
+                if (filters.FT.min !== null && row['Slab Used FT (dC)'] !== undefined) {
+                    if (row['Slab Used FT (dC)'] < filters.FT.min || row['Slab Used FT (dC)'] > filters.FT.max) return false;
+                }
+
+                const selectedProducts = Array.from(document.querySelectorAll(`#product-checkboxes-${Object.keys(filters)[0]} input:checked`))
+                    .map(checkbox => checkbox.value);
+                if (selectedProducts.length && !selectedProducts.includes(row.Product)) return false;
+
+                return true;
+            });
+
+            if (filtered.length > 0 && !isNaN(filters.ysPercentiles.min) && !isNaN(filters.ysPercentiles.max)) {
+                const ysValues = filtered.map(row => row.YS).filter(v => v !== undefined && v !== null).sort((a, b) => a - b);
+                if (ysValues.length > 0) {
+                    const minIndex = Math.floor(ysValues.length * filters.ysPercentiles.min);
+                    const maxIndex = Math.floor(ysValues.length * filters.ysPercentiles.max);
+                    const ysMin = ysValues[minIndex];
+                    const ysMax = ysValues[maxIndex];
+                    filtered = filtered.filter(row => row.YS >= ysMin && row.YS <= ysMax);
+                }
+            }
+
+            if (filtered.length > 0 && !isNaN(filters.tsPercentiles.min) && !isNaN(filters.tsPercentiles.max)) {
+                const tsValues = filtered.map(row => row.TS).filter(v => v !== undefined && v !== null).sort((a, b) => a - b);
+                if (tsValues.length > 0) {
+                    const minIndex = Math.floor(tsValues.length * filters.tsPercentiles.min);
+                    const maxIndex = Math.floor(tsValues.length * filters.tsPercentiles.max);
+                    const tsMin = tsValues[minIndex];
+                    const tsMax = tsValues[maxIndex];
+                    filtered = filtered.filter(row => row.TS >= tsMin && row.TS <= tsMax);
+                }
+            }
+
+            return filtered;
+        }
+
+        // Function to update results
+        function updateResults() {
+            if (!filteredData1.length && !filteredData2.length) {
+                showAlert('warning', 'No data matches your filter criteria.');
+                resultsDiv.style.display = 'none';
+                return;
+            }
+
+            resultsDiv.style.display = 'block';
+            filterSummary.innerHTML = `
+                <strong>Filter Set 1:</strong> ${getFilterSummary(1)}<br>
+                <strong>Filter Set 2:</strong> ${getFilterSummary(2)}
+            `;
+            dataCount.textContent = `Matching rows - Set 1: ${filteredData1.length}, Set 2: ${filteredData2.length} of ${fullData.length}`;
+            updateMechanicalStats();
+            updateChemistryStats();
+            createDistributionCharts();
+            updateDataTable();
+        }
+
+        // Helper to get filter summary
+        function getFilterSummary(set) {
+            const suffix = `-${set}`;
+            const cMin = document.getElementById(`c-min${suffix}`).value;
+            const cMax = document.getElementById(`c-max${suffix}`).value;
+            const siMin = document.getElementById(`si-min${suffix}`).value;
+            const siMax = document.getElementById(`si-max${suffix}`).value;
+            const mnMin = document.getElementById(`mn-min${suffix}`).value;
+            const mnMax = document.getElementById(`mn-max${suffix}`).value;
+            const ysMinPerc = document.getElementById(`ys-min-percentile${suffix}`).value;
+            const ysMaxPerc = document.getElementById(`ys-max-percentile${suffix}`).value;
+            const tsMinPerc = document.getElementById(`ts-min-percentile${suffix}`).value;
+            const tsMaxPerc = document.getElementById(`ts-max-percentile${suffix}`).value;
+            return `C (${cMin}-${cMax}), Si (${siMin}-${siMax}), Mn (${mnMin}-${mnMax}), YS Percentiles (${ysMinPerc}%-${ysMaxPerc}%), TS Percentiles (${tsMinPerc}%-${tsMaxPerc}%)`;
+        }
+
+        // Function to update mechanical properties statistics
+        function updateMechanicalStats() {
+            [1, 2].forEach(set => {
+                const mechanicalTable = document.getElementById(`mechanical-stats-${set}`).getElementsByTagName('tbody')[0];
+                mechanicalTable.innerHTML = '';
+                const properties = ['YS', 'TS', 'El'];
+                const stats = ['Min', 'Max', 'Average', 'Median', 'Std Dev'];
+                const data = set === 1 ? filteredData1 : filteredData2;
+
+                stats.forEach(stat => {
+                    const row = mechanicalTable.insertRow();
+                    row.insertCell(0).textContent = stat;
+                    properties.forEach((prop, index) => {
+                        const cell = row.insertCell(index + 1);
+                        const values = data.map(row => row[prop]).filter(v => v !== undefined);
+                        cell.textContent = values.length ? calculateStat(values, stat).toFixed(2) : 'N/A';
+                    });
+                });
+            });
+        }
+
+        // Helper function to calculate statistics
+        function calculateStat(values, stat) {
+            const sorted = [...values].sort((a, b) => a - b);
+            const avg = values.reduce((a, b) => a + b, 0) / values.length;
+            switch(stat) {
+                case 'Min': return Math.min(...values);
+                case 'Max': return Math.max(...values);
+                case 'Average': return avg;
+                case 'Median': return sorted.length % 2 === 0 ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2 : sorted[Math.floor(sorted.length / 2)];
+                case 'Std Dev': return Math.sqrt(values.reduce((acc, val) => acc + Math.pow(val - avg, 2), 0) / values.length);
+            }
+        }
+
+        // Function to update chemistry statistics
+        function updateChemistryStats() {
+            const chemistryTable = document.getElementById('chemistry-stats').getElementsByTagName('tbody')[0];
+            chemistryTable.innerHTML = '';
+            const elements = ['C', 'Si', 'Mn', 'P', 'S', 'Nb', 'Cu', 'Cr', 'Ni', 'Mo', 'V', 'Al', 'Ti', 'N', 'B', 'Ce'];
+            const dataSets = [filteredData1, filteredData2];
+            
+            elements.forEach(element => {
+                dataSets.forEach((data, index) => {
+                    const values = data.map(row => row[element]).filter(v => v !== undefined);
+                    if (!values.length) return;
+                    const min = Math.min(...values);
+                    const max = Math.max(...values);
+                    const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
+                    const stdDev = Math.sqrt(values.reduce((acc, val) => acc + Math.pow(val - avg, 2), 0) / values.length);
+                    
+                    const row = chemistryTable.insertRow();
+                    row.insertCell(0).textContent = `${element} (Set ${index + 1})`;
+                    row.insertCell(1).textContent = min.toFixed(6);
+                    row.insertCell(2).textContent = max.toFixed(6);
+                    row.insertCell(3).textContent = avg.toFixed(6);
+                    row.insertCell(4).textContent = stdDev.toFixed(6);
+                });
+            });
+        }
+
+        // Function to create distribution charts
+        function createDistributionCharts() {
+            createHistogram('YS', 'ys-chart', 'Yield Strength (MPa)');
+            createHistogram('TS', 'ts-chart', 'Tensile Strength (MPa)');
+            createHistogram('El', 'el-chart', 'Elongation (%)');
+        }
+
+        // Function to create histogram
+        function createHistogram(property, elementId, title) {
+            const values1 = filteredData1.map(row => row[property]).filter(v => v !== undefined);
+            const values2 = filteredData2.map(row => row[property]).filter(v => v !== undefined);
+            const traces = [];
+            
+            if (values1.length) {
+                traces.push({
+                    x: values1,
+                    type: 'histogram',
+                    name: 'Set 1',
+                    opacity: 0.7,
+                    marker: { color: 'rgba(0, 123, 255, 0.6)', line: { color: 'rgba(0, 123, 255, 1)', width: 1 } },
+                    histnorm: 'probability density'
+                });
+            }
+            if (values2.length) {
+                traces.push({
+                    x: values2,
+                    type: 'histogram',
+                    name: 'Set 2',
+                    opacity: 0.7,
+                    marker: { color: 'rgba(220, 53, 69, 0.6)', line: { color: 'rgba(220, 53, 69, 1)', width: 1 } },
+                    histnorm: 'probability density'
+                });
+            }
+
+            const layout = {
+                title: `${title} Distribution`,
+                xaxis: { title: title },
+                yaxis: { title: 'Density' },
+                barmode: 'overlay',
+                legend: { orientation: 'h', y: -0.2 },
+                margin: { l: 50, r: 50, t: 50, b: 80 }
+            };
+
+            Plotly.newPlot(elementId, traces, layout, { responsive: true, displayModeBar: true, displaylogo: false });
+        }
+
+        // Function to update data table
+        function updateDataTable() {
+            const dataTable = document.getElementById('data-table');
+            const tableHead = dataTable.getElementsByTagName('thead')[0];
+            const tableBody = dataTable.getElementsByTagName('tbody')[0];
+            tableHead.innerHTML = '';
+            tableBody.innerHTML = '';
+
+            const headerRow = tableHead.insertRow();
+            columnNames.concat(['FilterSet']).forEach(col => {
+                const th = document.createElement('th');
+                th.textContent = col;
+                headerRow.appendChild(th);
+            });
+
+            const combinedData = [
+                ...filteredData1.slice(0, 5).map(row => ({ ...row, FilterSet: 'Set 1' })),
+                ...filteredData2.slice(0, 5).map(row => ({ ...row, FilterSet: 'Set 2' }))
+            ];
+
+            combinedData.forEach(row => {
+                const tableRow = tableBody.insertRow();
+                columnNames.concat(['FilterSet']).forEach(col => {
+                    const cell = tableRow.insertCell();
+                    if (row[col] !== undefined) {
+                        if (typeof row[col] === 'number' && ['C', 'Si', 'Mn', 'P', 'S', 'Nb', 'Cu', 'Cr', 'Ni', 'Mo', 'V', 'Al', 'Ti', 'N', 'B', 'Ce'].includes(col)) {
+                            cell.textContent = row[col].toFixed(6);
+                        } else if (typeof row[col] === 'number') {
+                            cell.textContent = row[col].toFixed(2);
+                        } else {
+                            cell.textContent = row[col];
+                        }
+                    } else {
+                        cell.textContent = '-';
+                    }
+                });
+            });
+        }
+
+        // Function to reset filters
+        function resetFilters() {
+            const inputElements = document.querySelectorAll('input[type="number"], input[type="text"]');
+            inputElements.forEach(input => input.value = '');
+            const checkboxes = document.querySelectorAll('.checkbox-group input[type="checkbox"]');
+            checkboxes.forEach(checkbox => checkbox.checked = true);
+            [1, 2].forEach(set => {
+                document.getElementById(`ys-min-percentile-${set}`).value = 25;
+                document.getElementById(`ys-max-percentile-${set}`).value = 75;
+                document.getElementById(`ts-min-percentile-${set}`).value = 25;
+                document.getElementById(`ts-max-percentile-${set}`).value = 75;
+            });
+            populateInitialRanges();
+            resultsDiv.style.display = 'none';
+            showAlert('success', 'Filters have been reset.');
+        }
+
+        // Function to show alerts
+        function showAlert(type, message) {
+            alertSuccess.style.display = 'none';
+            alertError.style.display = 'none';
+            alertWarning.style.display = 'none';
+            switch(type) {
+                case 'success':
+                    alertSuccess.textContent = message;
+                    alertSuccess.style.display = 'block';
+                    break;
+                case 'error':
+                    alertError.textContent = message;
+                    alertError.style.display = 'block';
+                    break;
+                case 'warning':
+                    alertWarning.textContent = message;
+                    alertWarning.style.display = 'block';
+                    break;
+            }
+            setTimeout(() => document.getElementById(`alert-${type}`).style.display = 'none', 5000);
+        }
+    </script>
+</body>
+</html>
